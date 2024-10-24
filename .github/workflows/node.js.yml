@@ -23,6 +23,7 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
+    - run: npm install --save-dev
     - run: npm run build
     - name: Upload static files as artifact
       id: deployment
