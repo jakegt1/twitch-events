@@ -7,6 +7,8 @@
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
 
     "baseUrl": ".",
+    "verbatimModuleSyntax": false,
+    "strict": false,
     "paths": {
       "@/*": ["./src/*"]
     }

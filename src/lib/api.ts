@@ -89,7 +89,7 @@ function loadWebsocket(messages: Ref<WebsocketMessage[]>): WebSocket {
   return socket;
 }
 
-async function makeRequest(info: RequestInfo | URL, init?: RequestInit): Response {
+async function makeRequest(info: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   if(init == undefined) {
     init = {};
   }
