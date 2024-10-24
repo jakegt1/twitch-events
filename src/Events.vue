@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, Ref, ref } from 'vue';
-import { EventChannelChatMessage, SubscriptionType, WebsocketMessage, loadWebsocket } from './lib/api';
+import { computed, ComputedRef, Ref, ref } from 'vue';
+import { EventChannelChatMessage, EventFollow, SubscriptionType, WebsocketMessage, loadWebsocket } from './lib/api';
 
 interface Event{
   type: string
@@ -9,20 +9,27 @@ interface Event{
 }
 
 const messages: Ref<WebsocketMessage[]> = ref([]);
-const events = computed(() => {
+const events: ComputedRef<Event[]> = computed(() => {
   const asMessages = messages.value;
   return asMessages.map((msg) => {
     switch(msg.metadata.subscription_type) {
       case SubscriptionType.channel_chat_message:
         const data: EventChannelChatMessage = msg.payload.event;
         return {
-          type: "",
+          type: "message",
           header: `${data.chatter_user_name} | ${msg.metadata.message_timestamp}`,
           body: data.message.text
         }
+      case SubscriptionType.channel_follow:
+        const follow: EventFollow = msg.payload.event;
+        return {
+          type: "message is-info",
+          header: `${follow.user_name} | ${msg.metadata.message_timestamp}`,
+          body: `${follow.user_name} followed you! Be nice!`
+        }
       default:
         return {
-          type: "",
+          type: "message",
           header: "Unknown",
           body: "Unknown event type. Serious bug. Lol"
         }
@@ -39,7 +46,7 @@ init();
 
 <template>
   <div class="container pt-4">
-    <article class="message" v-for="event in events">
+    <article :class="event.type" v-for="event in events">
       <div class="message-header">
         {{ event.header }}
       </div>

@@ -13,7 +13,6 @@ enum MessageType {
 enum SubscriptionType {
   channel_chat_message = "channel.chat.message",
   channel_follow = "channel.follow"
-
 }
 
 interface User {
@@ -34,6 +33,10 @@ interface SessionPayload {
 
 interface Message {
   text: string
+}
+
+interface EventFollow {
+  user_name: string
 }
 
 interface EventChannelChatMessage {
@@ -64,10 +67,15 @@ function loadWebsocket(messages: Ref<WebsocketMessage[]>): WebSocket {
     const data: WebsocketMessage = JSON.parse(e.data);
     if(data.metadata.message_type == MessageType.session_welcome) {
       const session = data.payload.session
-      createSubscription(session.id);
+      await deleteAllSubscriptions();
+      createSubscription(session.id, SubscriptionType.channel_chat_message, "1");
+      createSubscription(session.id, SubscriptionType.channel_follow, "2");
     } else if(data.metadata.subscription_type !== undefined) {
       switch(data.metadata.subscription_type) {
         case SubscriptionType.channel_chat_message:
+          messages.value.push(data);
+          break;
+        case SubscriptionType.channel_follow:
           messages.value.push(data);
           break;
         default:
@@ -124,17 +132,14 @@ async function deleteAllSubscriptions() {
   });
 }
 
-async function createSubscription(sessionId: string) {
-  const currentSubscription = storage.getSubscription();
-  if(currentSubscription !== null) {
-    deleteSubscription(currentSubscription);
-  }
+async function createSubscription(sessionId: string, type: SubscriptionType, version: string) {
   const user = await getUser();
   const data = {
-    type: "channel.chat.message",
-    version: "1",
+    type: type,
+    version: version,
     condition: {
       broadcaster_user_id: user.id,
+      moderator_user_id: user.id,
       user_id: user.id
     },
     transport: {
@@ -142,12 +147,17 @@ async function createSubscription(sessionId: string) {
       session_id: sessionId
     }
   }
-  const subscription = await makeRequest(SUB_API, {
-    method: "POST",
-    body: JSON.stringify(data)
-  });
-  const respData = await subscription.json();
-  storage.setSubscription(respData.data[0].id);
+  try {
+    const subscription = await makeRequest(SUB_API, {
+      method: "POST",
+      body: JSON.stringify(data)
+    });
+    const respData = await subscription.json();
+    return respData.data[0].id;
+  } catch {
+    localStorage.removeItem("accessToken");
+    window.location.reload();
+  }
 }
 
 export {
@@ -156,5 +166,6 @@ export {
   getUser,
   WebsocketMessage,
   SubscriptionType,
-  EventChannelChatMessage
+  EventChannelChatMessage,
+  EventFollow
 }

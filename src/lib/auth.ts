@@ -2,7 +2,7 @@ import { getToken, setToken } from './storage';
 
 const CLIENT_ID = "au24gwo6fw1akn4l1c1j567a5gmrje";
 const TWITCH_URL = "https://id.twitch.tv/oauth2/authorize?"
-const SCOPES = "user:read:chat user:read:follows user:read:subscriptions"
+const SCOPES = "user:read:chat user:read:follows user:read:subscriptions moderator:read:followers"
 
 function twitchRedirectUrl(): string {
   const params = new URLSearchParams();
