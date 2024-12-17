@@ -1,5 +1,6 @@
 import { type Ref } from "vue";
 import { CLIENT_ID } from "./auth";
+import { Event } from './interfaces';
 import * as storage from './storage';
 
 const USER_API = "https://api.twitch.tv/helix/users";
@@ -54,14 +55,46 @@ interface WebsocketMessage {
   payload: PayloadType
 }
 
+function websocketMessageToEvent(msg: WebsocketMessage): Event {
+  switch(msg.metadata.subscription_type) {
+    case SubscriptionType.channel_chat_message:
+      const data: EventChannelChatMessage = msg.payload.event;
+      return {
+        type: "message",
+        header: `${data.chatter_user_name} | ${msg.metadata.message_timestamp}`,
+        body: data.message.text
+      }
+    case SubscriptionType.channel_follow:
+      const follow: EventFollow = msg.payload.event;
+      return {
+        type: "message is-info",
+        header: `${follow.user_name} | ${msg.metadata.message_timestamp}`,
+        body: `${follow.user_name} followed you! Be nice!`
+      }
+    default:
+      return {
+        type: "message",
+        header: "Unknown",
+        body: "Unknown event type. Serious bug. Lol"
+      }
+  }
+}
 
-function loadWebsocket(messages: Ref<WebsocketMessage[]>): WebSocket {
+function loadWebsocket(notifications: Ref<Event[]>): WebSocket {
   const socket = new WebSocket("wss://eventsub.wss.twitch.tv/ws");
   socket.onopen = async (e) => {
-    console.log("opened socket");
+    notifications.value.push({
+      type: "message is-info",
+      header: "Connecting",
+      body: "Connecting to twitch.."
+    })
   };
   socket.onclose = async (e) => {
-    console.log("wtf going on");
+    notifications.value.push({
+      type: "message is-error",
+      header: "Error - Disconnected",
+      body: "Disconnected from twitch api. This should not happen! Please refresh the page!"
+    })
   };
   socket.onmessage = async (e) => {
     const data: WebsocketMessage = JSON.parse(e.data);
@@ -70,13 +103,18 @@ function loadWebsocket(messages: Ref<WebsocketMessage[]>): WebSocket {
       await deleteAllSubscriptions();
       createSubscription(session.id, SubscriptionType.channel_chat_message, "1");
       createSubscription(session.id, SubscriptionType.channel_follow, "2");
+      notifications.value.push({
+        type: "message is-primary",
+        header: "Ready",
+        body: "Successfully connected to twitch, all ready!"
+      })
     } else if(data.metadata.subscription_type !== undefined) {
       switch(data.metadata.subscription_type) {
         case SubscriptionType.channel_chat_message:
-          messages.value.push(data);
+          notifications.value.push(websocketMessageToEvent(data));
           break;
         case SubscriptionType.channel_follow:
-          messages.value.push(data);
+          notifications.value.push(websocketMessageToEvent(data));
           break;
         default:
           console.log("message received.");
@@ -84,7 +122,11 @@ function loadWebsocket(messages: Ref<WebsocketMessage[]>): WebSocket {
     }
   }
   socket.onerror = async (e) => {
-    console.log("big error lads");
+    notifications.value.push({
+      type: "message is-error",
+      header: "Error - Disconnected",
+      body: "Disconnected from twitch api. This should not happen! Please refresh the page!"
+    })
   }
   return socket;
 }
@@ -164,6 +206,7 @@ export {
   createSubscription,
   loadWebsocket,
   getUser,
+  websocketMessageToEvent,
   WebsocketMessage,
   SubscriptionType,
   EventChannelChatMessage,
