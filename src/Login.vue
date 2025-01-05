@@ -1,13 +1,11 @@
 <script setup lang="ts">
-import { Ref, ref } from 'vue';
 import { twitchRedirectUrl } from './lib/auth';
 
-const url: Ref<string> = ref(twitchRedirectUrl());
-console.log(twitchRedirectUrl());
+window.location.href = twitchRedirectUrl();
 </script>
 
 <template>
-  <a :href="url">Login</a>
+  <div>Loading..</div>
 </template>
 
 <style lang="scss">

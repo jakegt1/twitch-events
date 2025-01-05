@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, ComputedRef, Ref, ref } from 'vue';
-import { EventChannelChatMessage, EventFollow, SubscriptionType, WebsocketMessage, loadWebsocket } from './lib/api';
+import { Ref, ref } from 'vue';
+import { loadWebsocket } from './lib/api';
 
 interface Event{
   type: string
