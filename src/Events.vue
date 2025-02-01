@@ -18,7 +18,7 @@ init();
 </script>
 
 <template>
-  <div class="container pt-4">
+  <div class="container pt-4 is-flex-direction-column-reverse is-flex">
     <article :class="event.type" v-for="event in events">
       <div class="message-header">
         {{ event.header }}
@@ -31,4 +31,7 @@ init();
 </template>
 
 <style lang="scss">
+  article:last-child {
+    margin-bottom: 24px;
+  }
 </style>
